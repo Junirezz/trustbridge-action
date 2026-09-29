@@ -80,6 +80,7 @@ import { getOctokitProxyOptions } from './proxy';
 import { lookupAddressFromContract, fetchFullContractRoster, ContractLookupError, contractExistsOnChain } from './soroban';
 import { registerCorePlugins } from './corePlugins';
 import { defaultRegistry } from './plugin';
+import { runPlugins } from './pluginRunner';
 import { loadPluginsFromAllowlist } from './pluginLoader';
 import { readTrustbridgeConfigs, mergeConsumerConfig } from './configReader';
 import {
@@ -757,7 +758,7 @@ async function run(): Promise<void> {
   const stellarAddressesRaw = core.getInput("stellar_addresses") || "";
 
   // Full-report artifact path (used when comment exceeds size limit)
-  const reportOutputPath = "trustbridge-report.md";
+  const reportOutputPath = core.getInput("report_output_path") || "trustbridge-report.md";
 
   // Failure snooze window (Issue #155)
   const snoozeWindowMinutes = parseNumberInput(
@@ -1259,8 +1260,10 @@ async function run(): Promise<void> {
           batchMarkdown,
           {
             sticky: stickyComment,
+            commentMode: commentThreadingMode,
             forceComment,
             snoozeWindowMs,
+            issueNumber: issueNumberInput,
           },
         );
         if (batchCommentUrl) {
@@ -1417,7 +1420,9 @@ async function run(): Promise<void> {
       core.info(`[fixture_mode] Loaded Horizon fixture from ${fixturePath} — no network call made.`);
       horizonFetchStatusCode = 200;
       horizonFetchLatencyMs = 0;
-      result = await runAccountChecks(account, checkConfig);
+      result = usePluginRunner
+      ? runPlugins({ account, config: checkConfig, stellarAddress: effectiveResolvedAddress }, defaultRegistry)
+      : await runAccountChecks(account, checkConfig);
     } catch (fixtureError) {
       const msg = getErrorMessage(fixtureError);
       core.setFailed(`Failed to load fixture file "${fixturePath}": ${msg}`);
@@ -1449,7 +1454,9 @@ async function run(): Promise<void> {
     horizonFetchLatencyMs = Date.now() - horizonFetchStartMs;
     horizonFetchStatusCode = 200;
     globalMetrics.stopTimer("horizon_fetch");
-    result = await runAccountChecks(account, checkConfig);
+    result = usePluginRunner
+      ? runPlugins({ account, config: checkConfig, stellarAddress: effectiveResolvedAddress }, defaultRegistry)
+      : await runAccountChecks(account, checkConfig);
   } catch (error) {
     horizonFetchLatencyMs = Date.now() - horizonFetchStartMs;
     globalMetrics.stopTimer("horizon_fetch");
@@ -1479,7 +1486,9 @@ async function run(): Promise<void> {
           try {
             account = await fetchAccount(horizonUrl, effectiveResolvedAddress, horizonOptions);
             horizonFetchStatusCode = 200;
-            result = await runAccountChecks(account, checkConfig);
+            result = usePluginRunner
+      ? runPlugins({ account, config: checkConfig, stellarAddress: effectiveResolvedAddress }, defaultRegistry)
+      : await runAccountChecks(account, checkConfig);
           } catch (refetchErr) {
             logger.warn('Failed to re-fetch account after Friendbot funding', {
               component: 'index',
