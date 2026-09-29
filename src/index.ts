@@ -1217,8 +1217,10 @@ async function run(): Promise<void> {
           batchMarkdown,
           {
             sticky: stickyComment,
+            commentMode: commentThreadingMode,
             forceComment,
             snoozeWindowMs,
+            issueNumber: issueNumberInput,
           },
         );
         if (batchCommentUrl) {
