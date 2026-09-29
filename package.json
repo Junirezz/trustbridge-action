@@ -7,7 +7,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc --noEmit && ncc build src/index.ts -o dist --source-map --license licenses.txt && node scripts/normalize-maps.js",
+    "build": "tsc --noEmit && ncc build src/index.ts -o dist --source-map --license licenses.txt && node scripts/normalize-maps.js && node scripts/generate-dist-manifest.js",
+    "verify:dist": "node scripts/verify-dist-manifest.js",
     "preview-comment": "ts-node --transpile-only scripts/preview-comment.ts",
     "test:map-paths": "node scripts/check-map-paths.js",
     "bundle-size": "npm test -- --testPathPattern bundle-size --no-coverage",
@@ -16,7 +17,7 @@
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:mock": "jest --testPathPatterns horizon-mock-smoke --forceExit",
-    "lint": "eslint src __tests__ --ext .ts",
+    "lint": "eslint src __tests__",
     "prepare": "npm run build",
     "mock:start": "docker compose -f mock/horizon/docker-compose.yml up -d --wait",
     "mock:stop": "docker compose -f mock/horizon/docker-compose.yml down",
